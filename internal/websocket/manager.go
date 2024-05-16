@@ -72,6 +72,9 @@ func (m *Manager) setupEventHandlers() {
 }
 
 func Unsubscribe(event Event, c *Client) error {
+	c.Lock()
+	defer c.Unlock()
+
 	var chatevent SubscribeEvent
 
 	if err := json.Unmarshal(event.Payload, &chatevent); err != nil {
@@ -84,6 +87,9 @@ func Unsubscribe(event Event, c *Client) error {
 }
 
 func Subscribe(event Event, c *Client) error {
+	c.Lock()
+	defer c.Unlock()
+
 	var chatevent SubscribeEvent
 
 	if err := json.Unmarshal(event.Payload, &chatevent); err != nil {

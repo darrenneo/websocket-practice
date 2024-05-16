@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -25,6 +26,8 @@ type Client struct {
 	egress chan Event
 
 	subscribedCurrencies map[string]bool
+
+	sync.RWMutex
 }
 
 func NewClient(conn *websocket.Conn, manager *Manager) *Client {
