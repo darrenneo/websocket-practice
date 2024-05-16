@@ -1,4 +1,4 @@
-package main
+package websocket
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	currency "websocket-practice/internal/currency"
 
 	"github.com/gorilla/websocket"
 )
@@ -39,9 +41,9 @@ func NewManager(ctx context.Context) *Manager {
 	return m
 }
 
-func (m *Manager) startCurr() {
-	for _, currency := range currencies {
-		go func(curr Currency) {
+func (m *Manager) StartCurr() {
+	for _, currencies := range currency.Currencies {
+		go func(curr currency.Currency) {
 			for {
 				nextJSON, err := curr.GetNextJSON()
 				if err != nil {
@@ -59,7 +61,7 @@ func (m *Manager) startCurr() {
 
 				time.Sleep(curr.Interval)
 			}
-		}(currency)
+		}(currencies)
 	}
 }
 
@@ -133,7 +135,7 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 	}
 }
 
-func (m *Manager) serveWS(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// otp := r.URL.Query().Get("otp")
 	// if otp == "" {
 	// 	w.WriteHeader(http.StatusUnauthorized)
@@ -163,7 +165,7 @@ func (m *Manager) serveWS(w http.ResponseWriter, r *http.Request) {
 	go client.writeMessages()
 }
 
-func (m *Manager) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	type userLoginRequest struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
