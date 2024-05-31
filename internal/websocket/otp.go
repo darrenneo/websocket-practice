@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// ! NOT USED
 type OTP struct {
 	Key     string
 	Created time.Time

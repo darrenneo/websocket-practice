@@ -11,6 +11,7 @@ import (
 	"time"
 
 	currency "websocket-practice/internal/currency"
+	"websocket-practice/internal/settings"
 
 	"github.com/gorilla/websocket"
 )
@@ -49,7 +50,6 @@ func (m *Manager) StartCurr() {
 				if err != nil {
 					return
 				}
-
 				for client := range m.clients {
 					if _, ok := client.subscribedCurrencies[curr.Name]; ok {
 						client.egress <- Event{
@@ -58,7 +58,6 @@ func (m *Manager) StartCurr() {
 						}
 					}
 				}
-
 				time.Sleep(curr.Interval)
 			}
 		}(currencies)
@@ -142,17 +141,6 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 }
 
 func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
-	// otp := r.URL.Query().Get("otp")
-	// if otp == "" {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	return
-	// }
-
-	// if !m.OTP.VerifyOTP(otp) {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	return
-	// }
-
 	log.Println("Websocket connection established")
 
 	// Upgrade the HTTP connection to a websocket connection
@@ -185,25 +173,8 @@ func (m *Manager) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Username == "test" && req.Password == "123" {
-		type response struct {
-			OTP string `json:"otp"`
-		}
-
-		otp := m.OTP.NewOTP()
-
-		resp := response{
-			OTP: otp.Key,
-		}
-
-		data, err := json.Marshal(resp)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+	if req.Username == settings.Get().Secrets.Username && req.Password == settings.Get().Secrets.Password {
 		w.WriteHeader(http.StatusOK)
-		w.Write(data)
 		return
 	}
 
