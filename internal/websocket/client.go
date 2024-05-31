@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -102,6 +103,7 @@ func (c *Client) writeMessages() {
 
 			data, err := json.Marshal(message)
 			if err != nil {
+				fmt.Println("LOL")
 				log.Printf("failed to marshal message: %v", err)
 				return
 			}
@@ -137,4 +139,12 @@ func (c *Client) writeMessages() {
 func (c *Client) pongHandler(pongMsg string) error {
 	//! Pong
 	return c.connection.SetReadDeadline(time.Now().Add(pongWait))
+}
+
+func (c *Client) checkSubscribedCurrency(curr string) bool {
+	if _, ok := c.subscribedCurrencies[curr]; !ok {
+		return false
+	}
+
+	return true
 }
