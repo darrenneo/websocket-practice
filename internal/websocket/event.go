@@ -15,7 +15,7 @@ type EventHandler func(event Event, c *Client) error
 const (
 	EventSendMessage    = "send_message"
 	EventNewMessage     = "new_message"
-	EventSubScribe      = "subscribe"
+	EventSubscribe      = "subscribe"
 	EventUnsubScribe    = "unsubscribe"
 	EventAcknowledge    = "acknowledge"
 	EventConnectionInit = "connection_init"
