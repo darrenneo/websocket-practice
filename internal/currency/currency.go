@@ -18,6 +18,8 @@ type Currency struct {
 	IntervalString int           `json:"interval_in_ms"`
 }
 
+var CurrencyList = []string{"nani", "programming", "is", "fun"}
+
 func (c Currency) GetNextJSON() ([]byte, error) {
 	newChange := randRange(c.ChangeMin, c.ChangeMax)
 	// Currency shall not go negative
