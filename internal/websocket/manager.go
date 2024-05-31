@@ -68,6 +68,24 @@ func (m *Manager) setupEventHandlers() {
 	m.handlers[EventSendMessage] = SendMessage
 	m.handlers[EventSubScribe] = Subscribe
 	m.handlers[EventUnsubScribe] = Unsubscribe
+	m.handlers[EventAcknowledge] = Acknowledge
+}
+
+func Acknowledge(event Event, c *Client) error {
+	c.Lock()
+	defer c.Unlock()
+	c.acknowledge = true
+
+	data := []byte(`{"acknowledge": true}`)
+
+	outgoingEvent := Event{
+		Type:    EventConnectionInit,
+		Payload: data,
+	}
+
+	c.egress <- outgoingEvent
+
+	return nil
 }
 
 func Unsubscribe(event Event, c *Client) error {
@@ -147,8 +165,6 @@ func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Unauthorized"))
 		return
 	}
-
-	fmt.Println(otp)
 
 	if !m.OTP.VerifyOTP(otp) {
 		w.WriteHeader(http.StatusUnauthorized)

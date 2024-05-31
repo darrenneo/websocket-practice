@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	pongWait = 10 * time.Second
-
+	pongWait     = 10 * time.Second
+	ackInterval  = 30 * time.Second
 	pingInterval = (pongWait * 9) / 10
 )
 
@@ -27,6 +27,8 @@ type Client struct {
 
 	subscribedCurrencies map[string]bool
 
+	acknowledge bool
+
 	sync.RWMutex
 }
 
@@ -36,6 +38,7 @@ func NewClient(conn *websocket.Conn, manager *Manager) *Client {
 		manager:              manager,
 		egress:               make(chan Event),
 		subscribedCurrencies: make(map[string]bool),
+		acknowledge:          false,
 	}
 }
 
@@ -82,7 +85,10 @@ func (c *Client) writeMessages() {
 		c.manager.removeClient(c)
 	}()
 
-	ticker := time.NewTicker(pingInterval)
+	pingTicker := time.NewTicker(pingInterval)
+
+	ackTicker := time.NewTicker(ackInterval)
+	defer ackTicker.Stop()
 
 	for {
 		select {
@@ -104,12 +110,24 @@ func (c *Client) writeMessages() {
 				log.Printf("failed to send message: %v", err)
 			}
 
-		case <-ticker.C:
+		case <-pingTicker.C:
 			//! Ping
-
 			// send ping message
 			if err := c.connection.WriteMessage(websocket.PingMessage, []byte(``)); err != nil {
 				log.Println("failed to send ping message: ", err)
+				return
+			}
+			if !c.acknowledge {
+				if err := c.connection.WriteMessage(websocket.TextMessage, []byte("ping")); err != nil {
+					log.Println("failed to send ping message: ", err)
+					return
+				}
+			}
+
+		case <-ackTicker.C:
+			//? Acknowledge
+			if !c.acknowledge {
+				log.Println("Client did not acknowledge")
 				return
 			}
 		}
