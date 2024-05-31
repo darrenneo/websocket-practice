@@ -98,7 +98,27 @@ func Unsubscribe(event Event, c *Client) error {
 		return fmt.Errorf("failed to unmarshal payload in unsubscribe: %w", err)
 	}
 
+	alreadySubscribed := c.checkSubscribedCurrency(chatevent.Currency)
+
+	if !alreadySubscribed {
+		data := []byte(`{"currency": "Not Subscribed"}`)
+
+		outgoingEvent := Event{
+			Type:    EventSubscribe,
+			Payload: data,
+		}
+		c.egress <- outgoingEvent
+		return nil
+	}
+
 	delete(c.subscribedCurrencies, chatevent.Currency)
+	data := []byte(`{"currency": "Unsubscribed"}`)
+
+	outgoingEvent := Event{
+		Type:    EventSubscribe,
+		Payload: data,
+	}
+	c.egress <- outgoingEvent
 
 	return nil
 }
