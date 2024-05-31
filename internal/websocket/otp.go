@@ -9,6 +9,7 @@ import (
 
 // ! NOT USED
 type OTP struct {
+	IP      string
 	Key     string
 	Created time.Time
 }
@@ -23,13 +24,15 @@ func NewRetentionMap(ctx context.Context, retentionPeriod time.Duration) Retenti
 	return rm
 }
 
-func (rm RetentionMap) NewOTP() OTP {
+func (rm RetentionMap) NewOTP(ip string) OTP {
 	o := OTP{
+		IP:      ip,
 		Key:     uuid.New().String(),
 		Created: time.Now(),
 	}
 
 	rm[o.Key] = o
+
 	return o
 }
 
@@ -42,7 +45,7 @@ func (rm RetentionMap) VerifyOTP(otp string) bool {
 }
 
 func (rm RetentionMap) Retention(ctx context.Context, retentionPeriod time.Duration) {
-	ticker := time.NewTicker(400 * time.Millisecond)
+	ticker := time.NewTicker(60 * time.Second)
 
 	for {
 		select {
@@ -56,4 +59,14 @@ func (rm RetentionMap) Retention(ctx context.Context, retentionPeriod time.Durat
 			return
 		}
 	}
+}
+
+func (rm RetentionMap) checkExistingIP(ip string) bool {
+	for _, otp := range rm {
+		if otp.IP == ip {
+			return true
+		}
+	}
+
+	return false
 }
