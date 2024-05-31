@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -70,7 +69,6 @@ func (rm RetentionMap) checkExistingIP(ip string) bool {
 		if otp.IP == ip {
 			return true
 		}
-		fmt.Print(otp)
 	}
 
 	return false
