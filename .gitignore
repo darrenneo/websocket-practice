@@ -1,2 +1,8 @@
 #test folder
 test
+
+# Local secrets
+internal/settings/secrets.json
+
+# Local configs
+internal/settings/configs.json
