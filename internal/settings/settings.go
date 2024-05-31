@@ -42,6 +42,8 @@ func LoadSettings() error {
 	}
 	settings.Configs = configs
 
+	l.Println("Settings loaded successfully")
+
 	return nil
 }
 
