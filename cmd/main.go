@@ -5,11 +5,15 @@ import (
 	"log"
 	"net/http"
 
+	"websocket-practice/internal/settings"
 	"websocket-practice/internal/websocket"
 )
 
 func main() {
+	settings.LoadSettings()
+
 	setupAPI()
+
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
 }
 
