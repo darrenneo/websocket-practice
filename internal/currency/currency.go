@@ -3,6 +3,7 @@ package currency
 import (
 	"encoding/json"
 	"math/rand"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -18,7 +19,14 @@ type Currency struct {
 	IntervalString int           `json:"interval_in_ms"`
 }
 
-var CurrencyList = []string{"nani", "programming", "is", "fun"}
+var CurrencyList = []string{"Nani", "Programming", "Is", "Fun"}
+
+func ValidateCurrency(curr string) bool {
+	if !slices.Contains(CurrencyList, curr) {
+		return false
+	}
+	return true
+}
 
 func (c Currency) GetNextJSON() ([]byte, error) {
 	newChange := randRange(c.ChangeMin, c.ChangeMax)
