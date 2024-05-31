@@ -39,27 +39,6 @@ func NewClient(conn *websocket.Conn, manager *Manager) *Client {
 	}
 }
 
-//! Moved to manager
-// func (c *Client) start() {
-// 	for _, currency := range currencies {
-// 		go func(curr Currency, ch chan<- Event) {
-// 			for {
-// 				nextJSON, err := curr.GetNextJSON()
-// 				if err != nil {
-// 					return
-// 				}
-// 				c.egress <- Event{
-// 					Type:    EventNewMessage,
-// 					Payload: nextJSON,
-// 				}
-
-// 				time.Sleep(curr.Interval)
-
-// 			}
-// 		}(currency, c.egress)
-// 	}
-// }
-
 func (c *Client) readMessages() {
 	defer func() {
 		// Clean up connection
@@ -127,45 +106,17 @@ func (c *Client) writeMessages() {
 
 		case <-ticker.C:
 			//! Ping
-			// log.Println("ping")
 
 			// send ping message
 			if err := c.connection.WriteMessage(websocket.PingMessage, []byte(``)); err != nil {
 				log.Println("failed to send ping message: ", err)
 				return
 			}
-
-			// if err := c.connection.WriteMessage(websocket.TextMessage, []byte("Data from server")); err != nil {
-			// 	log.Println("failed to send data from server: ", err)
-			// 	return
-			// }
-
 		}
 	}
 }
 
 func (c *Client) pongHandler(pongMsg string) error {
 	//! Pong
-	// log.Println("pong")
 	return c.connection.SetReadDeadline(time.Now().Add(pongWait))
 }
-
-// func generateCurr(c *Client, curren Currency) {
-// 	for _, currency := range currencies {
-// 		go func(curr Currency, ch chan<- []byte) {
-// 			for {
-// 				nextJSON, err := currency.GetNextJSON()
-// 				if err != nil {
-// 					return
-// 				}
-// 				c.egress <- Event{
-// 					Type:    EventNewMessage,
-// 					Payload: nextJSON,
-// 				}
-
-// 				time.Sleep(currency.Interval)
-
-// 			}
-// 		}(curren, c.egress)
-// 	}
-// }
