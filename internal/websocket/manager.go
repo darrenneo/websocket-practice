@@ -141,8 +141,20 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 }
 
 func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
-	log.Println("Websocket connection established")
+	// otp := r.URL.Query().Get("otp")
+	// if otp == "" {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	w.Write([]byte("Unauthorized"))
+	// 	return
+	// }
 
+	// if !m.OTP.VerifyOTP(otp) {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	w.Write([]byte("Unauthorized"))
+	// 	return
+	// }
+
+	log.Println("New connection")
 	// Upgrade the HTTP connection to a websocket connection
 	conn, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -160,25 +172,49 @@ func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	type userLoginRequest struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+	switch r.Method {
+	case http.MethodPost:
+		if r.Method == http.MethodPost {
+			type userLoginRequest struct {
+				Username string `json:"username"`
+				Password string `json:"password"`
+			}
+
+			var req userLoginRequest
+			err := json.NewDecoder(r.Body).Decode(&req)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			if req.Username == settings.Get().Secrets.Username && req.Password == settings.Get().Secrets.Password {
+
+				type response struct {
+					OTP string `json:"otp"`
+				}
+				otp := m.OTP.NewOTP()
+				resp := response{
+					OTP: otp.Key,
+				}
+
+				data, err := json.Marshal(resp)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write(data)
+				return
+			}
+
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+
+		}
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-
-	var req userLoginRequest
-
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if req.Username == settings.Get().Secrets.Username && req.Password == settings.Get().Secrets.Password {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	w.WriteHeader(http.StatusUnauthorized)
 }
 
 func (m *Manager) addClient(client *Client) {
@@ -200,9 +236,6 @@ func (m *Manager) removeClient(client *Client) {
 
 func checkOrigin(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
-
-	fmt.Println(origin)
-
 	switch origin {
 	case "http://localhost:8080":
 		return true
