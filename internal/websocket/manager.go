@@ -66,7 +66,7 @@ func (m *Manager) StartCurr() {
 
 func (m *Manager) setupEventHandlers() {
 	m.handlers[EventSendMessage] = SendMessage
-	m.handlers[EventSubScribe] = Subscribe
+	m.handlers[EventSubscribe] = Subscribe
 	m.handlers[EventUnsubScribe] = Unsubscribe
 	m.handlers[EventAcknowledge] = Acknowledge
 }
@@ -110,10 +110,48 @@ func Subscribe(event Event, c *Client) error {
 	var chatevent SubscribeEvent
 
 	if err := json.Unmarshal(event.Payload, &chatevent); err != nil {
+		fmt.Println("here")
 		return fmt.Errorf("failed to unmarshal payload in subscribe: %w", err)
 	}
 
+	fmt.Println("checking validate currency")
+	currExist := currency.ValidateCurrency(chatevent.Currency)
+
+	if !currExist {
+		data := []byte(`{"currency": "Not Found"}`)
+
+		outgoingEvent := Event{
+			Type:    EventSubscribe,
+			Payload: data,
+		}
+		c.egress <- outgoingEvent
+		return nil
+	}
+
+	fmt.Println("checking subscrbed currency")
+
+	alreadySubscribed := c.checkSubscribedCurrency(chatevent.Currency)
+
+	if alreadySubscribed {
+		data := []byte(`{"currency": "Already Subscribed"}`)
+
+		outgoingEvent := Event{
+			Type:    EventSubscribe,
+			Payload: data,
+		}
+		c.egress <- outgoingEvent
+		return nil
+	}
+
 	c.subscribedCurrencies[chatevent.Currency] = true
+	data := []byte(`{"currency": "Subscribed"}`)
+
+	outgoingEvent := Event{
+		Type:    EventSubscribe,
+		Payload: data,
+	}
+	c.egress <- outgoingEvent
+
 	return nil
 }
 
