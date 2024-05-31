@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,16 +25,19 @@ func NewRetentionMap(ctx context.Context, retentionPeriod time.Duration) Retenti
 	return rm
 }
 
-func (rm RetentionMap) NewOTP(ip string) OTP {
-	o := OTP{
-		IP:      ip,
-		Key:     uuid.New().String(),
-		Created: time.Now(),
+func (rm RetentionMap) NewOTP(ip string) (bool, OTP) {
+	otp := OTP{}
+	if rm.checkExistingIP(ip) == true {
+		return false, otp
 	}
 
-	rm[o.Key] = o
+	otp.IP = ip
+	otp.Key = uuid.New().String()
+	otp.Created = time.Now()
 
-	return o
+	rm[otp.Key] = otp
+
+	return true, otp
 }
 
 func (rm RetentionMap) VerifyOTP(otp string) bool {
@@ -66,6 +70,7 @@ func (rm RetentionMap) checkExistingIP(ip string) bool {
 		if otp.IP == ip {
 			return true
 		}
+		fmt.Print(otp)
 	}
 
 	return false

@@ -141,18 +141,20 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 }
 
 func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
-	// otp := r.URL.Query().Get("otp")
-	// if otp == "" {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	w.Write([]byte("Unauthorized"))
-	// 	return
-	// }
+	otp := r.URL.Query().Get("otp")
+	if otp == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return
+	}
 
-	// if !m.OTP.VerifyOTP(otp) {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	w.Write([]byte("Unauthorized"))
-	// 	return
-	// }
+	fmt.Println(otp)
+
+	if !m.OTP.VerifyOTP(otp) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return
+	}
 
 	log.Println("New connection")
 	// Upgrade the HTTP connection to a websocket connection
@@ -192,7 +194,14 @@ func (m *Manager) LoginHandler(w http.ResponseWriter, r *http.Request) {
 				type response struct {
 					OTP string `json:"otp"`
 				}
-				otp := m.OTP.NewOTP()
+
+				otpExist, otp := m.OTP.NewOTP(r.RemoteAddr)
+
+				if !otpExist {
+					http.Error(w, "You already have an OTP", http.StatusUnauthorized)
+					return
+				}
+
 				resp := response{
 					OTP: otp.Key,
 				}
