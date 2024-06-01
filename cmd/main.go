@@ -12,6 +12,8 @@ import (
 func main() {
 	settings.LoadSettings()
 
+	websocket.InitTimers()
+
 	setupAPI()
 
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
