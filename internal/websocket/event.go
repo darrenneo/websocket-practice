@@ -16,7 +16,7 @@ const (
 	EventSendMessage    = "send_message"
 	EventNewMessage     = "new_message"
 	EventSubscribe      = "subscribe"
-	EventUnsubScribe    = "unsubscribe"
+	EventUnsubscribe    = "unsubscribe"
 	EventAcknowledge    = "acknowledge"
 	EventConnectionInit = "connection_init"
 )
