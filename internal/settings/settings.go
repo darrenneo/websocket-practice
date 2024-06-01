@@ -17,7 +17,10 @@ type Secrets struct {
 	Password string `json:",omitempty"`
 }
 
-type Configs struct{}
+type Configs struct {
+	PongWait    int `json:",omitempty"`
+	AckInterval int `json:",omitempty"`
+}
 
 var settings = Settings{}
 
