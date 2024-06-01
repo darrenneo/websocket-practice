@@ -67,7 +67,7 @@ func (m *Manager) StartCurr() {
 func (m *Manager) setupEventHandlers() {
 	m.handlers[EventSendMessage] = SendMessage
 	m.handlers[EventSubscribe] = Subscribe
-	m.handlers[EventUnsubScribe] = Unsubscribe
+	m.handlers[EventUnsubscribe] = Unsubscribe
 	m.handlers[EventAcknowledge] = Acknowledge
 }
 
@@ -78,12 +78,7 @@ func Acknowledge(event Event, c *Client) error {
 
 	data := []byte(`{"acknowledge": true}`)
 
-	outgoingEvent := Event{
-		Type:    EventConnectionInit,
-		Payload: data,
-	}
-
-	c.egress <- outgoingEvent
+	sendEgress(c, EventConnectionInit, data)
 
 	return nil
 }
@@ -101,24 +96,18 @@ func Unsubscribe(event Event, c *Client) error {
 	alreadySubscribed := c.checkSubscribedCurrency(chatevent.Currency)
 
 	if !alreadySubscribed {
+
 		data := []byte(`{"currency": "Not Subscribed"}`)
 
-		outgoingEvent := Event{
-			Type:    EventSubscribe,
-			Payload: data,
-		}
-		c.egress <- outgoingEvent
+		sendEgress(c, EventUnsubscribe, data)
+
 		return nil
 	}
 
 	delete(c.subscribedCurrencies, chatevent.Currency)
 	data := []byte(`{"currency": "Unsubscribed"}`)
 
-	outgoingEvent := Event{
-		Type:    EventSubscribe,
-		Payload: data,
-	}
-	c.egress <- outgoingEvent
+	sendEgress(c, EventUnsubscribe, data)
 
 	return nil
 }
@@ -130,47 +119,33 @@ func Subscribe(event Event, c *Client) error {
 	var chatevent SubscribeEvent
 
 	if err := json.Unmarshal(event.Payload, &chatevent); err != nil {
-		fmt.Println("here")
 		return fmt.Errorf("failed to unmarshal payload in subscribe: %w", err)
 	}
 
-	fmt.Println("checking validate currency")
 	currExist := currency.ValidateCurrency(chatevent.Currency)
 
 	if !currExist {
 		data := []byte(`{"currency": "Not Found"}`)
 
-		outgoingEvent := Event{
-			Type:    EventSubscribe,
-			Payload: data,
-		}
-		c.egress <- outgoingEvent
+		sendEgress(c, EventSubscribe, data)
+
 		return nil
 	}
-
-	fmt.Println("checking subscrbed currency")
 
 	alreadySubscribed := c.checkSubscribedCurrency(chatevent.Currency)
 
 	if alreadySubscribed {
 		data := []byte(`{"currency": "Already Subscribed"}`)
 
-		outgoingEvent := Event{
-			Type:    EventSubscribe,
-			Payload: data,
-		}
-		c.egress <- outgoingEvent
+		sendEgress(c, EventSubscribe, data)
+
 		return nil
 	}
 
 	c.subscribedCurrencies[chatevent.Currency] = true
 	data := []byte(`{"currency": "Subscribed"}`)
 
-	outgoingEvent := Event{
-		Type:    EventSubscribe,
-		Payload: data,
-	}
-	c.egress <- outgoingEvent
+	sendEgress(c, EventSubscribe, data)
 
 	return nil
 }
@@ -325,4 +300,13 @@ func checkOrigin(r *http.Request) bool {
 	default:
 		return false
 	}
+}
+
+func sendEgress(c *Client, event string, data []byte) {
+	sendEgress := Event{
+		Type:    event,
+		Payload: data,
+	}
+
+	c.egress <- sendEgress
 }
