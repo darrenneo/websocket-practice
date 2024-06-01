@@ -19,6 +19,7 @@ const (
 	EventUnsubscribe    = "unsubscribe"
 	EventAcknowledge    = "acknowledge"
 	EventConnectionInit = "connection_init"
+	EventPing           = "ping"
 )
 
 type SendMessageEvent struct {

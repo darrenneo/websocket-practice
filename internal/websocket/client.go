@@ -2,18 +2,19 @@ package websocket
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"sync"
 	"time"
+
+	"websocket-practice/internal/settings"
 
 	"github.com/gorilla/websocket"
 )
 
 var (
-	pongWait     = 10 * time.Second
-	ackInterval  = 30 * time.Second
-	pingInterval = (pongWait * 9) / 10
+	pongWait     time.Duration
+	ackInterval  time.Duration
+	pingInterval time.Duration
 )
 
 type ClientList map[*Client]bool
@@ -31,6 +32,12 @@ type Client struct {
 	acknowledge bool
 
 	sync.RWMutex
+}
+
+func InitTimers() {
+	pongWait = time.Duration(settings.Get().Configs.PongWait) * time.Second
+	ackInterval = time.Duration(settings.Get().Configs.AckInterval) * time.Second
+	pingInterval = (pongWait * 9) / 10
 }
 
 func NewClient(conn *websocket.Conn, manager *Manager) *Client {
@@ -103,7 +110,6 @@ func (c *Client) writeMessages() {
 
 			data, err := json.Marshal(message)
 			if err != nil {
-				fmt.Println("LOL")
 				log.Printf("failed to marshal message: %v", err)
 				return
 			}
@@ -120,7 +126,19 @@ func (c *Client) writeMessages() {
 				return
 			}
 			if !c.acknowledge {
-				if err := c.connection.WriteMessage(websocket.TextMessage, []byte("ping")); err != nil {
+
+				pingEvent := Event{
+					Type:    EventPing,
+					Payload: json.RawMessage(`{"message": "ping"}`),
+				}
+
+				pingMessage, err := json.Marshal(pingEvent)
+				if err != nil {
+					log.Printf("failed to marshal message: %v", err)
+					return
+				}
+
+				if err := c.connection.WriteMessage(websocket.TextMessage, pingMessage); err != nil {
 					log.Println("failed to send ping message: ", err)
 					return
 				}
@@ -128,7 +146,22 @@ func (c *Client) writeMessages() {
 
 		case <-ackTicker.C:
 			//? Acknowledge
+			ackEvent := Event{
+				Type:    EventAcknowledge,
+				Payload: json.RawMessage(`{"message": "client did not acknowledge, disconnecting"}`),
+			}
+
+			ackMessage, err := json.Marshal(ackEvent)
+			if err != nil {
+				log.Printf("failed to marshal message: %v", err)
+				return
+			}
+
 			if !c.acknowledge {
+				if err := c.connection.WriteMessage(websocket.TextMessage, ackMessage); err != nil {
+					log.Println("failed to send ping message: ", err)
+					return
+				}
 				log.Println("Client did not acknowledge")
 				return
 			}
